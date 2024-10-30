@@ -351,3 +351,187 @@ See also get_current_screen() for the WordPress Admin Screen API.
 - `$allowedtags` (array)
 
 - `$menu` (array)
+
+### wp-config.php
+
+Il s'agit d,un des fichier les plus importants dans l'installation de WordPress, il se situe à la racine du dossier WordPress et contient les détails de configuration du site.
+
+#### Configurer les paramètres de base de données
+
+Ouvrir le fichier `wp-config-sample.php` dans un éditeur de texte.
+
+##### wp-config-sample.php par défaut
+
+Voici un exemple du fichier `wp-config-sample.php`, les valeurs sont des exemples pour indiquer quoi faire.
+
+```php
+// ** MySQL settings - You can get this info from your web host ** //
+
+/** The name of the database for WordPress */
+define( 'DB_NAME', 'database_name_here' );
+
+/** MySQL database username */
+define( 'DB_USER', 'username_here' );
+
+/** MySQL database password */
+define( 'DB_PASSWORD', 'password_here' );
+
+/** MySQL hostname */
+define( 'DB_HOST', 'localhost' );
+```
+
+##### Configurer le nom de la base de données
+
+*Remplacer 'database_name_here' par le nom de votre base de données*
+
+```php
+define( 'DB_NAME', 'database_name_here' ); // Example MySQL database name
+```
+
+##### Configurer l'utilisateur de la base de données
+
+```php
+define( 'DB_USER', 'username_here' ); // Example MySQL username
+```
+
+##### Configurer le mot de passe de la base de données
+
+```php
+define( 'DB_PASSWORD', 'password_here' ); // Example MySQL password
+```
+
+##### Configurer l'hôte de la base de données
+
+Il est possible d'avoir besoin de spécifier le port.
+
+```php
+define( 'DB_HOST', 'localhost' ); // Example MySQL Database host
+```
+
+*Il est possible de ne pas avoir besoin de changer l'hôte.*
+
+###### Port alternatif de MySQL
+
+Si votre hôte utilise un port alternatif pour votre base de données, vous devrez changer la valeur de **DB_HOST** dans `wp-config.php`.
+
+Pour localhost: 
+
+```php
+define( 'DB_HOST', '127.0.0.1:3307' );
+or
+define( 'DB_HOST', 'localhost:3307' );
+```
+
+Pour un server spécifique: 
+
+```php
+define( 'DB_HOST', 'mysql.example.com:3307' );
+```
+
+*Remplacer le nombre **3307** dans le code pour celui fourni par votre hôte.*
+
+###### *Sockets* ou *Pipes* MySQL
+
+Si votre hôte utilise des *sockets* ou *pipes* Unix, vous devrez changer la valeur de **DB_HOST** dans le fichier `wp-config.php`.
+
+```php
+define( 'DB_HOST', '127.0.0.1:/var/run/mysqld/mysqld.sock' );
+// or define( 'DB_HOST', 'localhost:/var/run/mysqld/mysqld.sock' );
+// or define( 'DB_HOST', 'example.tld:/var/run/mysqld/mysqld.sock' );
+```
+*Remplacer la chaîne de caractères `/var/run/mysqld/mysqld.stock` par l'information du **socket** ou **pipe** fourni par votre hôte.*
+
+##### Configurer le jeu de caractères de la base de données
+
+La valeur par défaut de **DB_CHARSET** est 'utf8', ce qui est souvent la meilleure option.
+
+```php
+define( 'DB_CHARSET', 'utf8' );
+```
+
+##### Classement de la base de données
+
+**DB_COLLATE** existe pour désigner le classement de la base de données. Dans la plupart des cas, la valeur devrait rester vide (null), pour que le classement de la base de données soit automatiquement assigné à MySQL selon le jeu de caractères spécifié avec **DB_CHARSET**. Il peut être nécessaire de changer la valeur de **BB_COLLATE** lorsque la langue d'affichage ne correspond pas au jeu de caractères.
+
+La valeur par défaut de WordPress: 
+
+```php
+define( 'DB_COLLATE', '' );
+```
+
+Classement général UTF-8 Unicode: 
+
+```php
+define( 'DB_COLLATE', 'utf8_general_ci' );
+```
+
+##### Clés de sécurité
+
+Vous n'avez pas à vous rappeler des clés, donc il peut être une bonne idée d'utiliser un générateur comme [celui-ci](https://api.wordpress.org/secret-key/1.1/salt/). Il est possible de les changer à tout moment pour invalider tous les *cookies* existant, tous les utilisateurs devront alors se reconnecter.
+
+Exemple (ne pas utiliser ces clés):
+
+```php
+define( 'AUTH_KEY',         't`DK%X:>xy|e-Z(BXb/f(Ur`8#~UzUQG-^_Cs_GHs5U-&Wb?pgn^p8(2@}IcnCa|' );
+define( 'SECURE_AUTH_KEY',  'D&ovlU#|CvJ##uNq}bel+^MFtT&.b9{UvR]g%ixsXhGlRJ7q!h}XWdEC[BOKXssj' );
+define( 'LOGGED_IN_KEY',    'MGKi8Br(&{H*~&0s;{k0<S(O:+f#WM+q|npJ-+P;RDKT:~jrmgj#/-,[hOBk!ry^' );
+define( 'NONCE_KEY',        'FIsAsXJKL5ZlQo)iD-pt??eUbdc{_Cn<4!d~yqz))&B D?AwK%)+)F2aNwI|siOe' );
+define( 'AUTH_SALT',        '7T-!^i!0,w)L#JK@pc2{8XE[DenYI^BVf{L:jvF,hf}zBf883td6D;Vcy8,S)-&G' );
+define( 'SECURE_AUTH_SALT', 'I6`V|mDZq21-J|ihb u^q0F }F_NUcy`l,=obGtq*p#Ybe4a31R,r=|n#=]@]c #' );
+define( 'LOGGED_IN_SALT',   'w<$4c$Hmd%/*]`Oom>(hdXW|0M=X={we6;Mpvtg+V.o<$|#_}qG(GaVDEsn,~*4i' );
+define( 'NONCE_SALT',       'a|#h{c5|P &xWs4IZ20c2&%4!c(/uG}W:mAvy<I44`jAbup]t=]V<`}.py(wTP%%' );
+```
+
+### Metadata
+
+#### Survol
+
+L'**API Metadata** une une façon simple et standardisée d'aller chercher et de manipuler du metadata de plusieurs type d'objet WordPress.
+
+Le metadata d'un objet est représenté par une simple paire clé-valeur.
+
+Les objets peuvent avoir plusieurs entrées de metadata qui partagent la même clé et diffèrent seulement de valeur.
+
+#### Fonction possibles
+
+- [add_metadata()](https://developer.wordpress.org/reference/functions/add_metadata/)
+
+- [delete_metadata()](https://developer.wordpress.org/reference/functions/delete_metadata/)
+
+- [get_metadata()](https://developer.wordpress.org/reference/functions/get_metadata/)
+
+- [update_metadata()](https://developer.wordpress.org/reference/functions/update_metadata/)
+
+#### Exigences de base de données
+
+Cette fonction assume qu'une table MySQL dédiée existe pour le `$meta_type` spécifié. Quelques `$meta_type` désiré ne vienne pas avec les tables pré-installées de WordPress, il faut donc les créer manuellement.
+
+##### Tables par défaut meta
+
+En assumant le préfixe `wp_`, les table meta incluses de WordPress sont:
+
+- `wp_commentmeta`: Metadata pour des commentaires spécifiques.
+
+- `wp_postmeta`: Metadata pour les pages, les posts et tous autres types post.
+
+- `wp_usermeta`: Metadata pour les utilisateurs.
+
+##### Structure de la table meta
+
+Pour enregistrer des données pour les types meta non inclus dans la précédente liste, une nouvelle table doit être créée. Toutes les tables meta requiert 4 colonnes.
+
+- meta_id – BIGINT(20): unsigned, auto_increment, not null, primary key.
+
+- object_id – BIGINT(20): unsigned, not null.
+
+Remplacer *object* avec le nom du contenu qui sera utilisé, au singulier.
+
+Même si cette colonne est utilisé comme une clé étrangère, elle ne devrait pas être définie comme tel.
+
+- meta_key – VARCHAR(255): La clé de votre meta data personnalisé.
+
+- meta_value – LONGTEXT: La valeur de votre meta data personnalisé.
+
+#### Fichier source
+
+L'**API Metadata** se trouve dans `wp-includes/meta.php`
