@@ -535,3 +535,25 @@ Même si cette colonne est utilisé comme une clé étrangère, elle ne devrait 
 #### Fichier source
 
 L'**API Metadata** se trouve dans `wp-includes/meta.php`
+
+## GitHub
+
+### Qu'est-ce Git?
+
+Un système de contrôle de version gratuit et *open source*.
+
+### Qu'est-ce que le contrôle de version?
+
+La gestion des changements dans des documents, des programme d'ordinateur, de gros sites web et autres collections d'informations.
+
+### Commandes Git
+
+- clone
+
+- add
+ 
+- commit
+
+- push
+
+- pull
