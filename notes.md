@@ -731,7 +731,6 @@ C'est pour cette raison que GraphQL inclus les unités réutilisables appelé *f
 Exemple d'opération:
 
 ```
-
 {
   leftComparison: hero(episode: EMPIRE) {
     ...comparisonFields
@@ -799,3 +798,313 @@ Réponse:
   }
 }
 ```
+
+Comme il est possible de voir, la requête aurait facilement pu être répétitive si les champs avaient été répétés. Le concept de fragments est souvent utilisé pour séparer des requête contant du data d'application complexe, en plus petits morceaux.
+
+#### Utiliser des variables à l'intérieur de fragments
+
+Il est possible que les fragments aient accès aux variables déclarées dans la requête ou la mutation.
+
+Exemple d'opération:
+
+```
+query HeroComparison($first: Int = 3) {
+  leftComparison: hero(episode: EMPIRE) {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: JEDI) {
+    ...comparisonFields
+  }
+}
+​
+fragment comparisonFields on Character {
+  name
+  friendsConnection(first: $first) {
+    totalCount
+    edges {
+      node {
+        name
+      }
+    }
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "leftComparison": {
+      "name": "Luke Skywalker",
+      "friendsConnection": {
+        "totalCount": 4,
+        "edges": [
+          {
+            "node": {
+              "name": "Han Solo"
+            }
+          },
+          {
+            "node": {
+              "name": "Leia Organa"
+            }
+          },
+          {
+            "node": {
+              "name": "C-3PO"
+            }
+          }
+        ]
+      }
+    },
+    "rightComparison": {
+      "name": "R2-D2",
+      "friendsConnection": {
+        "totalCount": 3,
+        "edges": [
+          {
+            "node": {
+              "name": "Luke Skywalker"
+            }
+          },
+          {
+            "node": {
+              "name": "Han Solo"
+            }
+          },
+          {
+            "node": {
+              "name": "Leia Organa"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+#### Nom d'opération
+
+Dans plusieurs des exemples précédents, nous utilisions la syntaxe raccourcie où nous ne mettions pas le mot clé `query` et le nom de la requête, mais dans une application de production, il est utile de les utiliser pour éviter les ambiguïtés.
+
+Voici un exemple qui inclut le mot clé `query` comme type d'opération et `HeroNameAndFriends` comme nom d'opération:
+
+```
+query HeroNameAndFriends {
+  hero {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+Le **type d'opération** est soit *query*, *mutation* ou *subscription* et décrit le type d'opération voulue. Le type d'opération est requis à moins d'utiliser la syntaxe raccourcie.
+
+Le **nom d'opération** est un nom explicite et significatif pour l'opération. Il n'est pas requis, sauf pour des documents multi-opération, mais il est tout de même recommandé de l'utiliser puisqu'il est plus facile de déboguer. Lorsqu'il y a un problème, il est facile d'identifier la requête par nom que d'essayer de trouver la requête à partir de son contenu. C'est l'équivalent d'un nom de fonction dans un langage de programmation. 
+
+#### Variables
+
+Jusqu'à présent, nous avons écrit tout nos arguments à l'intérieur de la chaîne de requête. Cependant, pour la plupart des applications, les champs d'arguments sont dynamiques, par exemple, il pourrait y avoir un *dropdown* qui nous laisse choisir un épisode, une barre de recherche ou un ensemble de filtres.
+
+Lorsque nous utilisons des variables, il est important de suivre ces 3 étapes:
+
+1. Remplacer la valeur statique dans la requête par `$variableName`
+
+2. Déclarer `$variableName` comme étant une des variables acceptées dans la requête
+
+3. Passer `variableName: value` dans dictionnaire de variables, souvent un JSON
+
+Exemple d'opération:
+
+```
+query HeroNameAndFriends($episode: Episode) {
+  hero(episode: $episode) {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+Variables:
+
+```
+{
+  "episode": "JEDI"
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+##### Définitions de variables
+
+Les définitions de variable sont la partie ressemblant à `($episode: Episode)` dans la requête précédente. Elles fonctionnent de la même façon que des arguments pour une fonction dans un langage autre de programmation. Il s'agit d'une liste de toutes les variables, avec le préfixe `$` suivi par leur type, dans ce cas `Episode`.
+
+Toutes les variables déclarées dans GraphQL doivent être de type scalaire, énumération ou objets d'entrée. Donc si nous voulons passer un objet complexe dans un champ, nous devons savoir type d'entrée est compatible avec le serveur.
+
+Les définitions de variable peuvent être optionnelles ou requises, dans ce cas, puisqu'il n'y a pas de `!` après le type `Episode`, elle était optionnelle. Cependant, si le champ dans lequel on passe la variable requiert un argument non null, la variable aussi doit être requise.
+
+##### Variables par défaut
+
+Il est possible de donner un valeur par défaut à une variable, il suffit d'ajouter la valeur par défaut après la déclaration du type.
+
+Exemple d'opération:
+
+```
+query HeroNameAndFriends($episode: Episode = JEDI) {
+  hero(episode: $episode) {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+Lorsqu'une valeur par défaut est donnée, il est possible de ne pas fournir de variable dans la requête, si une variable des passée dans le dictionnaire de variable, la valeur par défaut sera alors écrasée.
+
+#### Directives
+
+Il est possible de devoir changer la structure et forme de la requête en utilisant des variables. 
+
+Exemple d'opération:
+
+```
+query Hero($episode: Episode, $withFriends: Boolean!) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $withFriends) {
+      name
+    }
+  }
+}
+```
+
+Variables:
+
+```
+{
+  "episode": "JEDI",
+  "withFriends": false
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+Exemple d'opération:
+
+```
+query Hero($episode: Episode, $withFriends: Boolean!) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $withFriends) {
+      name
+    }
+  }
+}
+```
+
+Variables:
+
+```
+{
+  "episode": "JEDI",
+  "withFriends": true
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+Voici les directives possibles:
+
+- `@include(if: Booléen)` Inclus seulement si le résultat de l'argument est `true`
+
+- `@skip(if: Booléen)` Passe ce champ si l'argument est `true`
+
+Les directives sont utiles pour éviter les situations où il faudrait modifier manuellement la requête pour ajouter ou enlever des morceaux.
+
+#### Mutations
+
+La plupart du temps où nous parlons de GraphQL, nous parlons de la récupération de données, mais n'importe quelle plateforme de données complète a besoin d'avoir une façon de modifier les données du côté serveur aussi.
+
+Dans REST, une requête peut parfois produire des effets secondaires sur le serveur. Cependant, il est recommandé par convention d'éviter d'utiliser les requêtes `GET` pour modifier des données.
