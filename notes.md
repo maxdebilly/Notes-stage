@@ -572,7 +572,7 @@ GraphQL est un langage de requête pour les API et un runtime côté serveur per
 
 Exemple d'opération: 
 
-```
+```graphql
 {
     hero{
         name
@@ -582,7 +582,7 @@ Exemple d'opération:
 
 Réponse: 
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -596,7 +596,7 @@ Il est aussi possible que les champs se réfèrent à des objets. Dans ce cas, i
 
 Exemple d'opération:
 
-```
+```graphql
 {
   hero {
     name
@@ -610,7 +610,7 @@ Exemple d'opération:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -637,7 +637,7 @@ Si il s'agissait seulement de traverser des objets et leurs champs, GraphQl sera
 
 Exemple d'opération:
 
-```
+```graphql
 {
   human(id: "1000") {
     name
@@ -648,7 +648,7 @@ Exemple d'opération:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "human": {
@@ -659,11 +659,11 @@ Réponse:
 }
 ```
 
-Grâce à GraphQL, il est possible de donner des arguments champs et objets nichés.
+Grâce à GraphQL, il est possible de donner des arguments champs et objets imbriqués.
 
 Exemple d'opération:
 
-```
+```graphql
 {
   human(id: "1000") {
     name
@@ -674,7 +674,7 @@ Exemple d'opération:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "human": {
@@ -694,7 +694,7 @@ Il est possible de faire des alias pour faire plusieurs requêtes sur le même c
 
 Exemple d'opération:
 
-```
+```graphql
 {
   empireHero: hero(episode: EMPIRE) {
     name
@@ -707,7 +707,7 @@ Exemple d'opération:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "empireHero": {
@@ -730,7 +730,7 @@ C'est pour cette raison que GraphQL inclus les unités réutilisables appelé *f
 
 Exemple d'opération:
 
-```
+```graphql
 {
   leftComparison: hero(episode: EMPIRE) {
     ...comparisonFields
@@ -751,7 +751,7 @@ fragment comparisonFields on Character {
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "leftComparison": {
@@ -807,7 +807,7 @@ Il est possible que les fragments aient accès aux variables déclarées dans la
 
 Exemple d'opération:
 
-```
+```graphql
 query HeroComparison($first: Int = 3) {
   leftComparison: hero(episode: EMPIRE) {
     ...comparisonFields
@@ -832,7 +832,7 @@ fragment comparisonFields on Character {
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "leftComparison": {
@@ -891,7 +891,7 @@ Dans plusieurs des exemples précédents, nous utilisions la syntaxe raccourcie 
 
 Voici un exemple qui inclut le mot clé `query` comme type d'opération et `HeroNameAndFriends` comme nom d'opération:
 
-```
+```graphql
 query HeroNameAndFriends {
   hero {
     name
@@ -904,7 +904,7 @@ query HeroNameAndFriends {
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -943,7 +943,7 @@ Lorsque nous utilisons des variables, il est important de suivre ces 3 étapes:
 
 Exemple d'opération:
 
-```
+```graphql
 query HeroNameAndFriends($episode: Episode) {
   hero(episode: $episode) {
     name
@@ -956,7 +956,7 @@ query HeroNameAndFriends($episode: Episode) {
 
 Variables:
 
-```
+```graphql
 {
   "episode": "JEDI"
 }
@@ -964,7 +964,7 @@ Variables:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -999,7 +999,7 @@ Il est possible de donner un valeur par défaut à une variable, il suffit d'ajo
 
 Exemple d'opération:
 
-```
+```graphql
 query HeroNameAndFriends($episode: Episode = JEDI) {
   hero(episode: $episode) {
     name
@@ -1018,7 +1018,7 @@ Il est possible de devoir changer la structure et forme de la requête en utilis
 
 Exemple d'opération:
 
-```
+```graphql
 query Hero($episode: Episode, $withFriends: Boolean!) {
   hero(episode: $episode) {
     name
@@ -1031,7 +1031,7 @@ query Hero($episode: Episode, $withFriends: Boolean!) {
 
 Variables:
 
-```
+```graphql
 {
   "episode": "JEDI",
   "withFriends": false
@@ -1040,7 +1040,7 @@ Variables:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -1052,7 +1052,7 @@ Réponse:
 
 Exemple d'opération:
 
-```
+```graphql
 query Hero($episode: Episode, $withFriends: Boolean!) {
   hero(episode: $episode) {
     name
@@ -1065,7 +1065,7 @@ query Hero($episode: Episode, $withFriends: Boolean!) {
 
 Variables:
 
-```
+```graphql
 {
   "episode": "JEDI",
   "withFriends": true
@@ -1074,7 +1074,7 @@ Variables:
 
 Réponse:
 
-```
+```graphql
 {
   "data": {
     "hero": {
@@ -1107,4 +1107,149 @@ Les directives sont utiles pour éviter les situations où il faudrait modifier 
 
 La plupart du temps où nous parlons de GraphQL, nous parlons de la récupération de données, mais n'importe quelle plateforme de données complète a besoin d'avoir une façon de modifier les données du côté serveur aussi.
 
-Dans REST, une requête peut parfois produire des effets secondaires sur le serveur. Cependant, il est recommandé par convention d'éviter d'utiliser les requêtes `GET` pour modifier des données.
+Dans REST, une requête peut parfois produire des effets secondaires sur le serveur. Cependant, il est recommandé par convention d'éviter d'utiliser les requêtes `GET` pour modifier des données. GraphQl fonctionne de façon similaire, techniquement une requête pourrait être implémentée pour écrire des données. Cependant, il est bon d'établir une convention disant qu'une requête qui écrit des données devrait être explicitement envoyée par mutation.
+
+Tout comme dans une requête, si le champ de mutation retourne un objet,il est possible de demandé pour les champs imbriqués. Cela peut s'avérer utile pour récupérer le nouvel état d'un objet après une modification.
+
+Voici un exemple simple de mutation:
+
+```graphql
+mutation CreateReviewForEpisode($ep: Episode!, $review: ReviewInput!) {
+  createReview(episode: $ep, review: $review) {
+    stars
+    commentary
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "ep": "JEDI",
+  "review": {
+    "stars": 5,
+    "commentary": "This is a great movie!"
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "createReview": {
+      "stars": 5,
+      "commentary": "This is a great movie!"
+    }
+  }
+}
+```
+
+Remarquez que le champ createReview retourne les champs stars et commentary de l'avis nouvellement créé. Cela est particulièrement utile lors de la modification de données existantes. Par exemple, lors de l'incrémentation d'un champ, on peut modifier et interroger la nouvelle valeur du champ en une seule requête.
+
+##### Plusieurs champs dans les mutations
+
+Tout comme une requête, une mutation peut contenir  plusieurs champs. Il y a une distinction importante entre les requête et le mutations, autre que le nom: 
+
+**Cependant, contrairement aux requêtes, les champs des mutations sont exécutés en série, et non en parallèle.**
+
+Cela signifie que si nous envoyons 2 mutations d'`incrementCredits` en une seule requête, la première finira assurément avant que la deuxième commence, ce qui assure que nous ne seront pas dans une course contre nous-même.
+
+#### Fragments en ligne
+
+Comme dans de nombreux systèmes de types, les schémas GraphQL permettent de définir des interfaces et des types unions.
+
+Lorsqu’on interroge un champ renvoyant une interface ou un type union dans GraphQL, on utilise des fragments en ligne pour accéder aux données du type concret sous-jacent. Cela permet de structurer les réponses en fonction du type spécifique des données récupérées.
+
+Exemple d'opération:
+
+```graphql
+query HeroForEpisode($ep: Episode!) {
+  hero(episode: $ep) {
+    name
+    ... on Droid {
+      primaryFunction
+    }
+    ... on Human {
+      height
+    }
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "ep": "JEDI"
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "primaryFunction": "Astromech"
+    }
+  }
+}
+```
+
+Dans cette requête, le champ `hero` retourne le type de `Character`, qui peut être soit `Human` ou `Droid` en fonction de l'argument `Episode`. Lors de la sélection directe, on peut uniquement demander des champs présents dans l'interface `Character`, comme `name`.
+
+Pour accéder à un champ d’un type concret dans GraphQL, il faut utiliser un fragment en ligne avec une condition de type. Par exemple, si un fragment est marqué comme `... on Droid`, le champ `primaryFunction` ne sera exécuté que si le `Character` renvoyé par `hero` est de type `Droid`. De même pour le champ `height` pour le type `Human`.
+
+Les fragments nommés peuvent également être utilisés de la même manière, car un fragment nommé est toujours associé à un type.
+
+#### Champs Meta
+
+Étant donné qu'il existe des situations où vous ne savez pas quel type vous recevrez du service GraphQL, vous avez besoin d'un moyen pour déterminer comment gérer ces données côté client. GraphQL vous permet de demander `__typename`, un champ méta, à tout moment dans une requête pour obtenir le nom du type d'objet à ce moment-là.
+
+Exemple d'opération:
+
+```graphql
+{
+  search(text: "an") {
+    __typename
+    ... on Human {
+      name
+    }
+    ... on Droid {
+      name
+    }
+    ... on Starship {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "search": [
+      {
+        "__typename": "Human",
+        "name": "Han Solo"
+      },
+      {
+        "__typename": "Human",
+        "name": "Leia Organa"
+      },
+      {
+        "__typename": "Starship",
+        "name": "TIE Advanced x1"
+      }
+    ]
+  }
+}
+```
+
+Dans la requête précédente, `search` retourne un type union qui peut être une des trois options. Il serait impossible de différencier les types du clients sans le champ `__typename`.
