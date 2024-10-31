@@ -557,3 +557,245 @@ La gestion des changements dans des documents, des programme d'ordinateur, de gr
 - push
 
 - pull
+
+## GraphQL
+
+### Introduction
+
+GraphQL est un langage de requête pour les API et un runtime côté serveur permettant d'exécuter des requêtes avec un système de types pour les données. Il est indépendant de toute base de données spécifique et repose sur le code et les données existants.
+
+### Requêtes et mutations
+
+#### Champs
+
+À son plus simple, GraphQL sert à demander des champs spécifiques sur des objets.
+
+Exemple d'opération: 
+
+```
+{
+    hero{
+        name
+    }
+}
+```
+
+Réponse: 
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+Il est aussi possible que les champs se réfèrent à des objets. Dans ce cas, il faut faire un sous-sélection des champs de cet objet.
+
+Exemple d'opération:
+
+```
+{
+  hero {
+    name
+    # Queries can have comments!
+    friends {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### Arguments
+
+Si il s'agissait seulement de traverser des objets et leurs champs, GraphQl serait déjà un langage très utile pour la récupération de données. Mais, lorsque l'on ajoute la capacité de passer des arguments aux champs, les choses deviennent encore plus intéressantes.
+
+Exemple d'opération:
+
+```
+{
+  human(id: "1000") {
+    name
+    height
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "human": {
+      "name": "Luke Skywalker",
+      "height": 1.72
+    }
+  }
+}
+```
+
+Grâce à GraphQL, il est possible de donner des arguments champs et objets nichés.
+
+Exemple d'opération:
+
+```
+{
+  human(id: "1000") {
+    name
+    height(unit: FOOT)
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "human": {
+      "name": "Luke Skywalker",
+      "height": 5.6430448
+    }
+  }
+}
+```
+
+Les arguments dans GraphQL peuvent être de plusieurs types, y compris des types d'énumération, qui limitent les valeurs possibles à un ensemble défini (comme METER ou FOOT pour des unités de longueur). GraphQL offre des types prédéfinis, mais les serveurs peuvent aussi créer des types personnalisés, à condition qu'ils puissent être sérialisés dans le format de transport choisi.
+
+
+#### Alias
+
+Il est possible de faire des alias pour faire plusieurs requêtes sur le même champs avec des arguments différents.
+
+Exemple d'opération:
+
+```
+{
+  empireHero: hero(episode: EMPIRE) {
+    name
+  }
+  jediHero: hero(episode: JEDI) {
+    name
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "empireHero": {
+      "name": "Luke Skywalker"
+    },
+    "jediHero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+Dans l'exemple précédent, les deux champs `hero` auraient entré en conflit, mais puisque les alias permettent d'avoir des noms différents, il est possible d'avoir les deux dans la même requête.
+
+#### Fragments
+
+Si par exemple, il y avait une page relativement compliquée dans notre app, qui nous laisserais comparer deux héros un à côté de l'autre, avec leur amis. Il pourrait s,agir d'une requête plutôt compliquée.
+
+C'est pour cette raison que GraphQL inclus les unités réutilisables appelé *fragments*. Les fragments nous laisse construire un ensemble de champs, ensuite il suffit de les inclure où nécessaire dans nos requêtes.
+
+Exemple d'opération:
+
+```
+
+{
+  leftComparison: hero(episode: EMPIRE) {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: JEDI) {
+    ...comparisonFields
+  }
+}
+​
+fragment comparisonFields on Character {
+  name
+  appearsIn
+  friends {
+    name
+  }
+}
+```
+
+Réponse:
+
+```
+{
+  "data": {
+    "leftComparison": {
+      "name": "Luke Skywalker",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ],
+      "friends": [
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        },
+        {
+          "name": "C-3PO"
+        },
+        {
+          "name": "R2-D2"
+        }
+      ]
+    },
+    "rightComparison": {
+      "name": "R2-D2",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ],
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
