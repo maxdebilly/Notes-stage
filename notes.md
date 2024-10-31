@@ -1253,3 +1253,220 @@ Réponse:
 ```
 
 Dans la requête précédente, `search` retourne un type union qui peut être une des trois options. Il serait impossible de différencier les types du clients sans le champ `__typename`.
+
+### Schémas et Types
+
+#### Système de type
+
+Le langage de requête GraphQL sélectionne des champs sur des objets.
+
+Exemple d'opération:
+
+```graphql
+{
+  hero {
+    name
+    appearsIn
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ]
+    }
+  }
+}
+```
+
+1. Nous commençons avec l'objet spécial à la racine
+2. Nous sélectionnons le champ `hero` sur celui-ci
+3. Nous sélectionnons les champs `name` et `appearIn` sur l'objet retourné par `hero`
+
+La structure d'une requête GraphQL correspond étroitement au résultat, ce qui permet de prédire ce que la requête retournera sans nécessairement connaître le serveur. Cependant, il est utile d'avoir la bonne description de ce que nous allons demander.
+
+#### Type de langage
+
+Les services de GraphQL peuvent être écrit dans n'importe quel langage. 
+
+#### Types d'objets et Champs
+
+La composante la plus simple d'un schémas GraphQL est les types d'objets, qui représente les sortes d'objet que l'on peut aller chercher avec le service et ses champs. 
+
+Exemple:
+
+```graphql
+type Character {
+  name: String!
+  appearsIn: [Episode!]!
+}
+```
+
+Le langage est facile à lire, mais voici le vocabulaire:
+
+- `Character` est un type d'objet GraphQL, ce qui veut dire que c'est un type avec des champs. La plupart des types dans votre schéma seront des types d'objets.
+
+- `name` et `appearsIn` sont des champs du type `Character`. Ce qui veut dire que `name` et `appearsIn` sont les seuls champs qui peuvent apparaître dans n'importe quel partie d'une requête GraphQL qui opère sur le type `Character`.
+
+- `String` est un des types scalaires intégré.
+
+- `String!`signifie que le champ n'est pas *nullable*, ce qui signifie que le service GraphQL promet de toujours donner une valeur lorsque ce champ est interrogé.
+
+- `[Episode!]!` représente un *array* d'objet `Episode`. Puisqu'il est aussi non *nullable*, on peut toujours s'attendre à un *array* (avec 0 ou plus d'items) lorsqu'on interroge le champ `appearsIn`. Puisqu' `Episode!` est aussi non *nullable*, nous pouvons toujours nous attendre à chaque item de l'*array* soit un objet `Episode`.
+
+#### Type scalaire
+
+Un type d'objet GraphQL a un nom et des champs, mais à un moment, ces champs doivent devenir des données concrètes. C'est là que les types scalaires entre en compte: ils représentent les feuilles de la requête.
+
+Dans la requête suivante, les champs `name` et `appearsIn` se résoudront à des types scalaires. Les types scalaires fournissent les valeurs finales dans une requête GraphQL, représentant des données simples, comme des *string*, *int* ou *bool*.
+
+Exemple d'opération:
+
+```graphql
+{
+  hero {
+    name
+    appearsIn
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ]
+    }
+  }
+}
+```
+
+Dans la plupart des services d'implémentation GraphQL, il est aussi possible de spécifier un type scalaire personnalisé. Par exemple, on pourrait définir un type `Date`:
+
+```graphql
+scalar Date
+```
+
+Il revient ensuite à notre implémentation de définir comment ce type doit être sérialisé, désérialisé et validé. Par exemple, on pourrait spécifier que le type `Date` doit toujours être sérialisé sous forme de timestamp entier, et le client doit savoir qu'il peut s'attendre à ce format pour tous les champs de date.
+
+#### Type énumération
+
+Aussi appelé *Enums*, les types énumération sont une sorte de scalaire spécial qui sont restreint à un ensemble de valeur particulier. Ça nous permet de:
+
+1. Valider que les arguments de ce type font partie des valeurs permises
+2. Communiquer à l'aide du système type qu'un champ aura toujours une valeur définie parmi un ensemble
+
+Voici de quoi peut avoir l'air une définition d'*enum* dans le langage de schéma GraphQL:
+
+```graphql
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+```
+
+#### Listes et non null
+
+Les types objet, enums et scalaires sont les seuls sorte de type pouvant être défini dans GraphQL. Cependant, lorsque les types sont utilisés dans d'autres parties du schéma, ou dans les déclarations de variables de requête, il est possible d'ajouter des *type modifier* additionnel qui affecte la validation de ces valeurs. 
+
+Voici un exemple:
+
+```graphql
+type Character {
+  name: String!
+  appearsIn: [Episode]!
+}
+```
+
+Dans cet exemple, nous utilisons un type `String` en précisant qu'il doit être non null en ajoutant `!` après le nom du type. 
+
+Le modificateur de type non-null peut aussi être utiliser lors de la définition des arguments pour un champ.
+
+Si un élément censé être non null retourne la valeur null, le serveur GraphQL retourne alors une erreur.
+
+Exemple d'opération:
+
+```graphql
+query DroidById($id: ID!) {
+  droid(id: $id) {
+    name
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "id": null
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Variable \"$id\" of non-null type \"ID!\" must not be null.",
+      "locations": [
+        {
+          "line": 1,
+          "column": 17
+        }
+      ]
+    }
+  ]
+}
+```
+
+Les listes fonctionnent de façon relativement similaire il est possible d,utiliser un modificateur de type pour marqué un type en `List`, ce qui signifie que ce champs retournera un *array* de ce type. On l'écrit en mettant `[` avant et `]` après.Ça fonctionne de la même façon pour les arguments, où l'étape de validation va s'attendre à recevoir un *array* de cette valeur.
+
+Le modificateur non-null et List peuvent être combinés. Par exemple, il est possible d'avoir une liste de *strings* non-null:
+
+```graphql
+myField: [String!]
+```
+
+Ce qui veut dire que la liste en elle-même peut être null, mais ses items ne peuvent pas l'être. Par exemple, en JSON:
+
+```graphql
+myField: null // valide
+myField: [] // valide
+myField: ["a", "b"] // valide
+myField: ["a", null, "b"] // erreur
+```
+
+Maintenant, si nous définissons une liste non-null de *strings*:
+
+```graphql
+myField: [String]!
+```
+
+Ce qui veut dire que la liste ne peut être null, mais ses items peuvent l'être. Par exemple en JSON:
+
+```graphql
+myField: null // erreur
+myField: [] // valide
+myField: ["a", "b"] // valide
+myField: ["a", null, "b"] // valider
+```
+
+Il est possible d'imbriquer le nombre désiré de modificateur list et non-null.
