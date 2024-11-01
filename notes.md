@@ -1470,3 +1470,256 @@ myField: ["a", null, "b"] // valider
 ```
 
 Il est possible d'imbriquer le nombre désiré de modificateur list et non-null.
+
+#### Interfaces
+
+Comme plusieurs systèmes de type, GraphQL supporte les interfaces. Une *Interface* est un type abstrait qui contient un certain ensemble de champs qu'un type doit inclure pour implémenter l'interface.
+
+Par exemple, nous pourrions avons une interface `Character` qui représente n'importe quel personnage de la trilogy Star Wars:
+
+```graphql
+interface Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+}
+```
+
+Ce qui signifie que n'importe quel type qui implémente `Character` doit avoir ces mêmes champs, avec les mêmes arguments et type de retour. Par exemple, voici quelques types qui pourraient implémenter `Character`:
+
+```graphql
+type Human implements Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+  starships: [Starship]
+  totalCredits: Int
+}
+ 
+type Droid implements Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+  primaryFunction: String
+}
+```
+
+Il est possible de constater que ces deux types ont tous les champs de l'interface `Character`, mais ont aussi des champs de plus comme `totalCredits`, `starships`et `primaryFunction` qui sont spécifique à ces types particuliers.
+
+Par exemple, dans l'exemple suivant, nous constatons que la requête produit une erreur:
+
+Opération:
+
+```graphql
+query HeroForEpisode($ep: Episode!) {
+  hero(episode: $ep) {
+    name
+    primaryFunction
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "ep": "JEDI"
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"primaryFunction\" on type \"Character\". Did you mean to use an inline fragment on \"Droid\"?",
+      "locations": [
+        {
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+Le champ `hero` retourne le type `Character`, ce qui veut dire qu'il s'agit soit d'un `Human`ou d'un `Droid` selon l'argument `Episode`. Dans la requête précédente, il est seulement possible de demander des champs existant sur l,interface `Character`, ce qui n'inclut pas `primaryFunction`.
+
+Pour demander un champ d'un objet spécifique, il faut utiliser un fragment en ligne:
+
+Opération:
+
+```graphql
+query HeroForEpisode($ep: Episode!) {
+  hero(episode: $ep) {
+    name
+    ... on Droid {
+      primaryFunction
+    }
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "ep": "JEDI"
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "primaryFunction": "Astromech"
+    }
+  }
+}
+```
+
+#### Type Union
+
+Les types union partagent des similitudes avec les interface, mais ils n'ont pas la capacité de définir des champs communs parmi les types qui les composent.
+
+```graphql
+union SearchResult = Human | Droid | Starship
+```
+
+Dès que nous retournons un type `SearchResult`dans notre schéma, nous pouvons obtenir un `Human`, un `Droid` ou un `Starship`. À noter que les items d'un type union doivent être des types objets concrets, il n'est pas possible de créer un type union à partir f'interface ou d'autres unions.
+
+Dans ce cas, si nous interrogeons un champ qui retourne le type union `SearchResult`, nous aurons besoin d'utiliser les fragments en ligne pour pouvoir interroger n'importe quel champ:
+
+Opération:
+
+```graphql
+{
+  search(text: "an") {
+    __typename
+    ... on Human {
+      name
+      height
+    }
+    ... on Droid {
+      name
+      primaryFunction
+    }
+    ... on Starship {
+      name
+      length
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "search": [
+      {
+        "__typename": "Human",
+        "name": "Han Solo",
+        "height": 1.8
+      },
+      {
+        "__typename": "Human",
+        "name": "Leia Organa",
+        "height": 1.5
+      },
+      {
+        "__typename": "Starship",
+        "name": "TIE Advanced x1",
+        "length": 9.2
+      }
+    ]
+  }
+}
+```
+
+Le champ `__typename`se résout en `String`, ce qui nous permet de différencier les types de données entre eux côté client.
+
+De plus, dans ce cas, puisque `Human`et `Droid` partagent un interface commun (`Character`), il est possible d'interroger leurs champs commun à une seule place au lieu de répéter le même champ pour plusieurs types:
+
+```graphql
+{
+  search(text: "an") {
+    __typename
+    ... on Character {
+      name
+    }
+    ... on Human {
+      height
+    }
+    ... on Droid {
+      primaryFunction
+    }
+    ... on Starship {
+      name
+      length
+    }
+  }
+}
+```
+
+À noter que `Name`est tout de même spécifié pour `Starship` parce qu'il n'apparaîtrait pas autrement puisque `Starship`n'est pas un `Character`.
+
+#### Type Input
+
+Il est aussi possible de passer des objets complexes en argument. C'est plutôt pratique dans les cas de mutation, où nous pourrions vouloir passer un objet au complet pour le créer. Les types input ressemblent beaucoup au objet régulier, à condition d'avoir le mot clé `input` au lieu de `type`.
+
+```graphql
+input ReviewInput {
+  stars: Int!
+  commentary: String
+}
+```
+
+Voici comment il est possible d'utiliser le type d'objet type dans une mutation:
+
+Opération:
+
+```graphql
+mutation CreateReviewForEpisode($ep: Episode!, $review: ReviewInput!) {
+  createReview(episode: $ep, review: $review) {
+    stars
+    commentary
+  }
+}
+```
+
+Variables:
+
+```graphql
+{
+  "ep": "JEDI",
+  "review": {
+    "stars": 5,
+    "commentary": "This is a great movie!"
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "createReview": {
+      "stars": 5,
+      "commentary": "This is a great movie!"
+    }
+  }
+}
+```
+
+Les champs d'un objet type input peuvent eux-même faire référence à des objets type input, mais il n'est pas possible de mélanger les type input et output dans un schéma. Les objets type input ne peuvent pas avoir d'arguments dans leurs champs.
