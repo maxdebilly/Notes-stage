@@ -2209,3 +2209,19 @@ Cet exemple est écrit en JavaScript, cependant les serveurs GraphQL peuvent êt
 
 - `info` Une valeur qui contient une information en lien avec un champ spécifique en lien avec la requête actuelle en plus des détails du schéma.
 
+#### *Resolvers* asynchrones
+
+Voici une fonction de *resolver*:
+
+```js
+human(obj, args, context, info) {
+  return context.db.loadHumanByID(args.id).then(
+    userData => new Human(userData)
+  )
+}
+```
+
+Le `context`est utilisé pour donner accès à la base de données, qui est utilisé pour charger les données pour un utilisateur selon le `id` donné en argument. Puisque le chargement de la base de données est une opération asynchrone, cela retourne un *promesse*. Lorsque la base de données arrive, nous pouvons construit et retourner un nouvel objet `Human`.
+
+À noter que la fonction *resolver* doit gérer des *Promesses*, alors que la requête GraphQL n'en est pas consciente. Elle s'attend seulement à ce que le champ `human` retourne quelque chose pour ensuite en demander le nom.
+
