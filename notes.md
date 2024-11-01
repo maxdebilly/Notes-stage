@@ -1370,7 +1370,7 @@ Il revient ensuite à notre implémentation de définir comment ce type doit êt
 Aussi appelé *Enums*, les types énumération sont une sorte de scalaire spécial qui sont restreint à un ensemble de valeur particulier. Ça nous permet de:
 
 1. Valider que les arguments de ce type font partie des valeurs permises
-2. Communiquer à l'aide du système type qu'un champ aura toujours une valeur définie parmi un ensemble
+2. Communiquer à l'aide du système de types qu'un champ aura toujours une valeur définie parmi un ensemble
 
 Voici de quoi peut avoir l'air une définition d'*enum* dans le langage de schéma GraphQL:
 
@@ -1726,7 +1726,7 @@ Les champs d'un objet type input peuvent eux-même faire référence à des obje
 
 ### Validation
 
-En utilisant le système type, il peut être prédéterminé wi une requête est valide ou non. Ce qui permet au serveur et au clients d'informer efficacement les développeurs lorsqu'une requête invalide à été crée.
+En utilisant le système de types, il peut être prédéterminé wi une requête est valide ou non. Ce qui permet au serveur et au clients d'informer efficacement les développeurs lorsqu'une requête invalide à été crée.
 
 Voici une requête valid complexe. Il s'agit d'une requête imbriquée:
 
@@ -2114,7 +2114,7 @@ Réponse:
 
 Après la validation, la requête doit être exécutée par un serveur GraphQL qui retourne un résultat qui a une forme similaire à la requête, typiquement en JSOn.
 
-GraphQL ne peut exécuter une requête sans système type, voici un exemple:
+GraphQL ne peut exécuter une requête sans système de types, voici un exemple:
 
 ```graphql
 type Query {
@@ -2224,4 +2224,20 @@ human(obj, args, context, info) {
 Le `context`est utilisé pour donner accès à la base de données, qui est utilisé pour charger les données pour un utilisateur selon le `id` donné en argument. Puisque le chargement de la base de données est une opération asynchrone, cela retourne un *promesse*. Lorsque la base de données arrive, nous pouvons construit et retourner un nouvel objet `Human`.
 
 À noter que la fonction *resolver* doit gérer des *Promesses*, alors que la requête GraphQL n'en est pas consciente. Elle s'attend seulement à ce que le champ `human` retourne quelque chose pour ensuite en demander le nom.
+
+#### *Resolvers* triviaux
+
+Maintenant qu'un objet `Human` est à disposition, l'exécution de GraphQL peut continué avec les champs qui y sont requis.
+
+```js
+Human: {
+  name(obj, args, context, info) {
+    return obj.name
+  }
+}
+```
+
+Un serveur GraphQL repose sur un système de types, utilisé pour déterminer les étapes suivantes dans le traitement des requêtes. Avant même que le champ `human` ne renvoie une valeur, GraphQL sait, grâce au système de types, qu'il devra résoudre les champs du type `Human`, puisque le champ `human` est défini pour retourner un type `Human`.
+
+La résolution du nom dans cet exemple est simple. La fonction du *resolver* du champ `name` est appelée, et l'argument `obj` est le nouvel objet `Human` renvoyé par le champ précédent. On s'attend à ce que cet objet `Human` ait une propriété `name`, que l'on peut lire et renvoyer directement.
 
