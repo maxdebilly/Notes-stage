@@ -2277,3 +2277,373 @@ Le *resolver* pour ce champs retourne une liste de *promesses*. L'objet `Human` 
 
 GraphQL attend que toutes ces *Promises* soient résolues simultanément avant de continuer. Une fois qu'il dispose d'une liste d'objets, il continuera également à charger le champ `name` pour chacun de ces éléments de manière concurrente.
 
+#### Production du résultat
+
+À mesure que chaque champ est résolu, sa valeur résultante est placée dans une carte clé-valeur avec le nom du champ comme clé et la valeur résolue comme valeur. Ce processus se poursuit depuis les champs feuilles jusqu'au champ d'origine du type de requête racine. Cela produit une structure qui reflète la requête d'origine, qui peut ensuite être envoyée, généralement au format JSON, au client qui l'a demandée.
+
+Opération:
+
+```graphql
+{
+  human(id: 1002) {
+    name
+    appearsIn
+    starships {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "human": {
+      "name": "Han Solo",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ],
+      "starships": [
+        {
+          "name": "Millenium Falcon"
+        },
+        {
+          "name": "Imperial shuttle"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Introspection
+
+Il est souvent utile de demander à un schéma GraphQL des informations sur les requêtes supportées. Il est possible de le faire avec le système d'introspection.
+
+Pour l'exemple Star Wars, le fichier contient un nombre de requêtes démontrant le système d'introspection.
+
+Si nous ne connaissons pas les types disponibles, on peut demander à GraphQL en interrogeant le champ `__schema`, qui est toujours disponible à la racine d'une requête.
+
+Exemple d'opération:
+
+```graphql
+{
+  __schema {
+    types {
+      name
+    }
+  }
+}
+```
+
+Réponse: 
+
+```graphql
+{
+  "data": {
+    "__schema": {
+      "types": [
+        {
+          "name": "Query"
+        },
+        {
+          "name": "String"
+        },
+        {
+          "name": "ID"
+        },
+        {
+          "name": "Mutation"
+        },
+        {
+          "name": "Episode"
+        },
+        {
+          "name": "Character"
+        },
+        {
+          "name": "Int"
+        },
+        {
+          "name": "LengthUnit"
+        },
+        {
+          "name": "Human"
+        },
+        {
+          "name": "Float"
+        },
+        {
+          "name": "Droid"
+        },
+        {
+          "name": "FriendsConnection"
+        },
+        {
+          "name": "FriendsEdge"
+        },
+        {
+          "name": "PageInfo"
+        },
+        {
+          "name": "Boolean"
+        },
+        {
+          "name": "Review"
+        },
+        {
+          "name": "ReviewInput"
+        },
+        {
+          "name": "Starship"
+        },
+        {
+          "name": "SearchResult"
+        },
+        {
+          "name": "__Schema"
+        },
+        {
+          "name": "__Type"
+        },
+        {
+          "name": "__TypeKind"
+        },
+        {
+          "name": "__Field"
+        },
+        {
+          "name": "__InputValue"
+        },
+        {
+          "name": "__EnumValue"
+        },
+        {
+          "name": "__Directive"
+        },
+        {
+          "name": "__DirectiveLocation"
+        }
+      ]
+    }
+  }
+}
+```
+
+Voici tous les types, par group: 
+
+- `Query`, `Character`, `Human`, `Episode`, `Droid` - Ce sont les types définis dans système de types
+
+- `String`, `Booléen` - Ce sont les types scalaires pré-conçus que les système de types à fourni
+
+- `__Schema`, `__Type`, `__TypeKind`, `__Field`, `__InputValue`, `__EnumValue`, `__Directive` - Ils font tous partie du système d'introspection
+
+Maintenant, demandons au système d'introspection quelles requêtes sont disponibles, par quelle commencer.
+
+Exemple d'opération:
+
+```graphql
+{
+  __schema {
+    queryType {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "__schema": {
+      "queryType": {
+        "name": "Query"
+      }
+    }
+  }
+}
+```
+
+Ça concorde avec ce qui avait été établi dans la section de système de types, que nous commençons toujours par le type `Query`. Il n'est pas obligé d'être appelé `Query`, mais il s'agit d'une bonne convention.
+
+Regardons le type `Droid`:
+
+Exemple d'opération:
+
+```graphql
+{
+  __type(name: "Droid") {
+    name
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "__type": {
+      "name": "Droid"
+    }
+  }
+}
+```
+
+Et si on veut en savoir plus sur les `Droid`, par exemple, est-ce un interface ou un objet?
+
+Exemple d'opération:
+
+```graphql
+{
+  __type(name: "Droid") {
+    name
+    kind
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "__type": {
+      "name": "Droid",
+      "kind": "OBJECT"
+    }
+  }
+}
+```
+
+`kind` retourne une énumération `__TypeKind`, une de ses valeurs est `OBJECT`. Si nous interrogeons `Character` maintenant pour savoir si il s'agit d'un interface:
+
+Exemple d'opération:
+
+```graphql
+{
+  __type(name: "Character") {
+    name
+    kind
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  __type(name: "Character") {
+    name
+    kind
+  }
+}
+```
+
+Il est utile pour un objet de savoir quels champs sont disponibles, interrogeons donc le système d'introspection sur `Droid`:
+
+Exemple d'opération:
+
+```graphql
+{
+  __type(name: "Droid") {
+    name
+    fields {
+      name
+      type {
+        name
+        kind
+      }
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "__type": {
+      "name": "Droid",
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "name": null,
+            "kind": "NON_NULL"
+          }
+        },
+        {
+          "name": "name",
+          "type": {
+            "name": null,
+            "kind": "NON_NULL"
+          }
+        },
+        {
+          "name": "friends",
+          "type": {
+            "name": null,
+            "kind": "LIST"
+          }
+        },
+        {
+          "name": "friendsConnection",
+          "type": {
+            "name": null,
+            "kind": "NON_NULL"
+          }
+        },
+        {
+          "name": "appearsIn",
+          "type": {
+            "name": null,
+            "kind": "NON_NULL"
+          }
+        },
+        {
+          "name": "primaryFunction",
+          "type": {
+            "name": "String",
+            "kind": "SCALAR"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Demandons au système d'introspection de la documentation:
+
+Exemple d'opération:
+
+```graphql
+{
+  __type(name: "Droid") {
+    name
+    description
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "__type": {
+      "name": "Droid",
+      "description": null
+    }
+  }
+}
+```
+On peut accéder à la documentation du système de types via l'introspection, permettant ainsi de créer des navigateurs de documentation ou des environnements de développement (IDE) enrichis. Le système d'introspection permet non seulement de consulter des valeurs d'énumération et de vérifier quelles interfaces un type implémente, mais aussi d'interroger le système d'introspection lui-même. La spécification couvre ce sujet en détail dans la section "Introspection", et le fichier d'introspection dans GraphQL.js propose un système d'introspection conforme à la spécification.
