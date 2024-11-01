@@ -1723,3 +1723,489 @@ Réponse:
 ```
 
 Les champs d'un objet type input peuvent eux-même faire référence à des objets type input, mais il n'est pas possible de mélanger les type input et output dans un schéma. Les objets type input ne peuvent pas avoir d'arguments dans leurs champs.
+
+### Validation
+
+En utilisant le système type, il peut être prédéterminé wi une requête est valide ou non. Ce qui permet au serveur et au clients d'informer efficacement les développeurs lorsqu'une requête invalide à été crée.
+
+Voici une requête valid complexe. Il s'agit d'une requête imbriquée:
+
+Opération:
+
+```graphql
+{
+  hero {
+    ...NameAndAppearances
+    friends {
+      ...NameAndAppearances
+      friends {
+        ...NameAndAppearances
+      }
+    }
+  }
+}
+
+fragment NameAndAppearances on Character {
+  name
+  appearsIn
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ],
+      "friends": [
+        {
+          "name": "Luke Skywalker",
+          "appearsIn": [
+            "NEWHOPE",
+            "EMPIRE",
+            "JEDI"
+          ],
+          "friends": [
+            {
+              "name": "Han Solo",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "Leia Organa",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "C-3PO",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "R2-D2",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Han Solo",
+          "appearsIn": [
+            "NEWHOPE",
+            "EMPIRE",
+            "JEDI"
+          ],
+          "friends": [
+            {
+              "name": "Luke Skywalker",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "Leia Organa",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "R2-D2",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Leia Organa",
+          "appearsIn": [
+            "NEWHOPE",
+            "EMPIRE",
+            "JEDI"
+          ],
+          "friends": [
+            {
+              "name": "Luke Skywalker",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "Han Solo",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "C-3PO",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            },
+            {
+              "name": "R2-D2",
+              "appearsIn": [
+                "NEWHOPE",
+                "EMPIRE",
+                "JEDI"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+
+Un fragment ne peut se référé à lui-même ou créer une boucle, puisque cela pourrait entraîner une boucle sans fin. Voici la même requête, mais sans les trois niveau d'imbrication explicites.
+
+Opération:
+
+```graphql
+{
+  hero {
+    ...NameAndAppearancesAndFriends
+  }
+}
+
+fragment NameAndAppearancesAndFriends on Character {
+  name
+  appearsIn
+  friends {
+    ...NameAndAppearancesAndFriends
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Cannot spread fragment \"NameAndAppearancesAndFriends\" within itself.",
+      "locations": [
+        {
+          "line": 11,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+Lorsque l'on fait un requête pour le champs, il faut le faire pour des champs qui existent pour le type voulu. Donc, le `hero` retourne un type `Character`, il faut donc l'interroger sur les champs de `Character`. Ce type n'a pas de champ `favorSpaceship`, la requête est donc invalide.
+
+Opération:
+
+```graphql
+# INVALID: favoriteSpaceship does not exist on Character
+{
+  hero {
+    favoriteSpaceship
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"favoriteSpaceship\" on type \"Character\".",
+      "locations": [
+        {
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+Dès que l'on fait un requête pour un champ et que le résultat retourné est autre chose qu'un scalaire ou enum, il faut spécifier quelles données nous souhaitons recevoir de ce champ. Hero retourne un `Character`, et nous avons omis la requête de champs comme `name` et `appearsIn`, la requête n'est donc pas valide.
+
+Opération:
+
+```graphql
+# INVALID: hero is not a scalar, so fields are needed
+{
+  hero
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Field \"hero\" of type \"Character\" must have a selection of subfields. Did you mean \"hero { ... }\"?",
+      "locations": [
+        {
+          "line": 3,
+          "column": 3
+        }
+      ]
+    }
+  ]
+}
+```
+
+De façon similaire, si un champ est un scalaire, il ne serait pas logique de l'interroger sur d'autres champs, ce qui rendrait alors la requête invalide:
+
+Opération:
+
+```graphql
+# INVALID: name is a scalar, so fields are not permitted
+{
+  hero {
+    name {
+      firstCharacterOfName
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Field \"name\" must not have a selection since type \"String!\" has no subfields.",
+      "locations": [
+        {
+          "line": 4,
+          "column": 10
+        }
+      ]
+    }
+  ]
+}
+```
+
+Puisque `hero`retourne un `Character`, il n'est pas possible d'interroger sur la `primaryFunction` de R2-D2:
+
+Opération:
+
+```graphql
+# INVALID: primaryFunction does not exist on Character
+{
+  hero {
+    name
+    primaryFunction
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"primaryFunction\" on type \"Character\". Did you mean to use an inline fragment on \"Droid\"?",
+      "locations": [
+        {
+          "line": 5,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+Cette requête est invalide puisque `primaryFunction` n'est pas un champ pour `Character`. Il faut indiquer que nous souhaitons interroger le champ `primaryFunction` seulement si le `Character`est un `Droid`. Il est possible d'utiliser un fragment pour cela. 
+
+Opération:
+
+```graphql
+{
+  hero {
+    name
+    ...DroidFields
+  }
+}
+
+fragment DroidFields on Droid {
+  primaryFunction
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "primaryFunction": "Astromech"
+    }
+  }
+}
+```
+
+Cette requête est valide mais un peu trop longue. Au lieu d'utiliser un fragment nommé, il serait plus convenable d'utiliser un fragment en ligne.
+
+Opération:
+
+```graphql
+{
+  hero {
+    name
+    ... on Droid {
+      primaryFunction
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "primaryFunction": "Astromech"
+    }
+  }
+}
+```
+
+### Exécution
+
+Après la validation, la requête doit être exécutée par un serveur GraphQL qui retourne un résultat qui a une forme similaire à la requête, typiquement en JSOn.
+
+GraphQL ne peut exécuter une requête sans système type, voici un exemple:
+
+```graphql
+type Query {
+  human(id: ID!): Human
+}
+ 
+type Human {
+  name: String
+  appearsIn: [Episode]
+  starships: [Starship]
+}
+ 
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+ 
+type Starship {
+  name: String
+}
+```
+
+Voici un exemple pour expliquer ce qui arrive lors de l'exécution d'une requête:
+
+Opération:
+
+```graphql
+{
+  human(id: 1002) {
+    name
+    appearsIn
+    starships {
+      name
+    }
+  }
+}
+```
+
+Réponse:
+
+```graphql
+{
+  "data": {
+    "human": {
+      "name": "Han Solo",
+      "appearsIn": [
+        "NEWHOPE",
+        "EMPIRE",
+        "JEDI"
+      ],
+      "starships": [
+        {
+          "name": "Millenium Falcon"
+        },
+        {
+          "name": "Imperial shuttle"
+        }
+      ]
+    }
+  }
+}
+```
+
+On peut se dire que chaque champ dans un requête est comme une fonction duu type précédent qui retourne le prochain type. En fait, c'est exactement comment GraphQL fonctionne. Chaque champ sur chaque type est soutenue par une fonctionne appelée *resolver*, qui est fournie par le serveur développeur GraphQL. Lorsqu'un champ est exécuter, le *resolver* correspondant est appelé pour produire la prochaine valeur.
+
+Si un champ produit une valeur scalaire, comme un *string* ou nombre, alors l'exécution se complète. Cependant, si un champ produit un objet, alors la requête contient alors une autre sélection de champs qui s'applique à cet objet. Les requête GraphQL se termine toujours sur des valeurs scalaires.
+
+#### Champs racines & *resolvers*
+
+Au sommet de tous les serveurs GraphQL se trouve un type qui représente tous les points d'entrées possibles vers l'API GraphQL, il est souvent appelé type *Root* ou type *Query*.
+
+Dans cet exemple, notre type Query fourni un champ appelé `human` qui accepte l'argument `id`. La fonction *resolver* pour ce champ, accède probablement à une base de donnée et ensuite construit et retourne un objet `Human`.
+
+```js
+Query: {
+  human(obj, args, context, info) {
+    return context.db.loadHumanByID(args.id).then(
+      userData => new Human(userData)
+    )
+  }
+}
+```
+
+Cet exemple est écrit en JavaScript, cependant les serveurs GraphQL peuvent être construit en plusieurs langages. Une fonction *resolver* reçoit 4 arguments:
+
+- `obj` L'objet précédent, qui pour un champ à la racine du type Query est souvent non utilisé.
+
+- `args` Les arguments fournis aux champs dans la requête
+
+- `context` Une valeur qui est fournie à chaque *resolver* et qui contient des informations contextuelles importantes comme l'utilisateur présentement connecté ou les accès à la base de données.
+
+- `info` Une valeur qui contient une information en lien avec un champ spécifique en lien avec la requête actuelle en plus des détails du schéma.
+
