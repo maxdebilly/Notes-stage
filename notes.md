@@ -2241,3 +2241,39 @@ Un serveur GraphQL repose sur un système de types, utilisé pour déterminer le
 
 La résolution du nom dans cet exemple est simple. La fonction du *resolver* du champ `name` est appelée, et l'argument `obj` est le nouvel objet `Human` renvoyé par le champ précédent. On s'attend à ce que cet objet `Human` ait une propriété `name`, que l'on peut lire et renvoyer directement.
 
+#### Coercion scalaire
+
+Pendant la résolution du champ `name`, les champs `appearsIn` et `starships` peuvent être résolus en parallèle. Le champ `appearsIn` pourrait aussi avoir un *resolver* simple, en voici un exemple:
+
+```js
+Human: {
+  appearsIn(obj) {
+    return obj.appearsIn // returns [ 4, 5, 6 ]
+  }
+}
+```
+
+À noter que notre système de types indique que `appearsIn` renverra des valeurs d'énumération connues, mais cette fonction renvoie des nombres. En effet, en examinant le résultat, nous verrons que les valeurs d'énumération appropriées sont renvoyées.
+
+Ceci est un exemple de coercion scalaire. Le système de types sait à quoi s'attendre et va convertir les données envoyées par la fonction *resolver* en quelque chose qui respecte le contrat de l'API. Dans ce cas, il pourrait y avoir une énumération définie sur notre serveur qui utilise des nombres comm `4`, `5`, et `6`, mais les représentent comme étant une énumération dans le système de types.
+
+#### *Resolvers* de liste
+
+Lorsqu'un champ renvoie une liste de chose avec le champ `appearsIn`, ça retourne une liste de valeur en énumération, et puisque c'était ce à quoi le système s'attendait, chaque élément de la liste a été contraint à la valeur appropriée de l'énumération. Que ce passe-t-il lorsque le champ `starships` est résolu?
+
+```js
+Human: {
+  starships(obj, args, context, info) {
+    return obj.starshipIDs.map(
+      id => context.db.loadStarshipByID(id).then(
+        shipData => new Starship(shipData)
+      )
+    )
+  }
+}
+```
+
+Le *resolver* pour ce champs retourne une liste de *promesses*. L'objet `Human` contient une liste d'*id* des `Starships`qu'ils ont piolté, mais il faut charger tous ces *id* pour avoir les vrais objet `Starship`.
+
+GraphQL attend que toutes ces *Promises* soient résolues simultanément avant de continuer. Une fois qu'il dispose d'une liste d'objets, il continuera également à charger le champ `name` pour chacun de ces éléments de manière concurrente.
+
